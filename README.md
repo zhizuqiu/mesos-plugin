@@ -1,6 +1,24 @@
 Jenkins on Mesos
 ----------------
 
+forked from [jenkinsci/mesos-plugin](https://github.com/jenkinsci/mesos-plugin)
+
+新增：
+
+- 对预留资源的支持
+
+编译环境：
+
+- java 8
+- mavne 3.6+
+
+编译：
+```
+mvn package [-Dmaven.test.skip=true]
+```
+
+# old README：
+
 The `jenkins-mesos` plugin allows Jenkins to dynamically launch Jenkins slaves on a
 Mesos cluster depending on the workload!
 

@@ -421,6 +421,17 @@ public class JenkinsScheduler implements Scheduler {
     public synchronized void resourceOffers(SchedulerDriver driver, List<Offer> offers) {
         Metrics.metricRegistry().meter("mesos.scheduler.offers.received").mark(offers.size());
 
+        // add by renfh8, 如果开启了debug
+        String isDebug = System.getenv("isDebug");
+        if ("true".equals(isDebug)) {
+            for (Offer offer : offers) {
+                LOGGER.info("-----------");
+                LOGGER.info("hostname: " + offer.getHostname());
+                LOGGER.info("offer id: " + offer.getId());
+                System.out.println(offer);
+            }
+        }
+
         if (multiThreaded && !isProcessing()) {
             startProcessing();
         }
@@ -583,6 +594,18 @@ public class JenkinsScheduler implements Scheduler {
                         " doesn't match expected role " + expectedRole);
                 continue;
             }
+
+            // add by renfh8, 排除不是该框架动态预留的
+            if (!"*".equals(resourceRole)) {
+                // 如果存在label，说明是框架动态预留的
+                if (resource.getReservation() != null
+                        && resource.getReservation().getLabels() != null
+                        && resource.getReservation().getLabels().getLabelsList().size() > 0) {
+                    LOGGER.info("Dynamic Reserve Resourcs is not expected");
+                    continue;
+                }
+            }
+
             if (resource.getName().equals("cpus")) {
                 if (resource.getType().equals(Value.Type.SCALAR)) {
                     cpus = resource.getScalar().getValue();
@@ -834,42 +857,54 @@ public class JenkinsScheduler implements Scheduler {
         for (Resource r : offer.getResourcesList()) {
             if (r.getName().equals("cpus") && cpusNeeded > 0) {
                 double cpus = Math.min(r.getScalar().getValue(), cpusNeeded);
-                builder.addResources(
-                        Resource
-                                .newBuilder()
-                                .setName("cpus")
-                                .setType(Value.Type.SCALAR)
-                                .setRole(r.getRole())
-                                .setScalar(
-                                        Value.Scalar.newBuilder()
-                                                .setValue(cpus).build()).build());
+                Protos.Resource.Builder cpusBuilder = Resource
+                        .newBuilder()
+                        .setName("cpus")
+                        .setType(Value.Type.SCALAR)
+                        .setRole(r.getRole())
+                        .setScalar(
+                                Value.Scalar.newBuilder()
+                                        .setValue(cpus).build());
+                // add by renfh8, 设置Reservation
+                if (r.getReservation() != null) {
+                    cpusBuilder.setReservation(r.getReservation()).build();
+                }
+                builder.addResources(cpusBuilder);
+
                 cpusNeeded -= cpus;
             } else if (r.getName().equals("mem") && memNeeded > 0) {
                 double mem = Math.min(r.getScalar().getValue(), memNeeded);
-                builder.addResources(
-                        Resource
-                                .newBuilder()
-                                .setName("mem")
-                                .setType(Value.Type.SCALAR)
-                                .setRole(r.getRole())
-                                .setScalar(
-                                        Value.Scalar.newBuilder()
-                                                .setValue(mem).build()).build());
+                Protos.Resource.Builder memBuilder = Resource
+                        .newBuilder()
+                        .setName("mem")
+                        .setType(Value.Type.SCALAR)
+                        .setRole(r.getRole())
+                        .setScalar(
+                                Value.Scalar.newBuilder()
+                                        .setValue(mem).build());
+                // add by renfh8, 设置Reservation
+                if (r.getReservation() != null) {
+                    memBuilder.setReservation(r.getReservation()).build();
+                }
+                builder.addResources(memBuilder);
                 memNeeded -= mem;
             } else if (r.getName().equals("disk") && diskNeeded > 0) {
                 double disk = Math.min(r.getScalar().getValue(), diskNeeded);
-                builder.addResources(
-                        Resource
-                                .newBuilder()
-                                .setName("disk")
-                                .setType(Value.Type.SCALAR)
-                                .setRole(r.getRole())
-                                .setScalar(
-                                        Value.Scalar.newBuilder()
-                                                .setValue(disk).build()).build());
+                Protos.Resource.Builder diskBuilder = Resource
+                        .newBuilder()
+                        .setName("disk")
+                        .setType(Value.Type.SCALAR)
+                        .setRole(r.getRole())
+                        .setScalar(
+                                Value.Scalar.newBuilder()
+                                        .setValue(disk).build());
+                // add by renfh8, 设置Reservation
+                if (r.getReservation() != null) {
+                    diskBuilder.setReservation(r.getReservation()).build();
+                }
+                builder.addResources(diskBuilder);
 
-            }
-            else if (cpusNeeded == 0 && memNeeded == 0 && diskNeeded == 0) {
+            } else if (cpusNeeded == 0 && memNeeded == 0 && diskNeeded == 0) {
                 break;
             }
         }
