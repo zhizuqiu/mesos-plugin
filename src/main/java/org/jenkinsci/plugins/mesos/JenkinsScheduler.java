@@ -88,7 +88,7 @@ public class JenkinsScheduler implements Scheduler {
 
     public static final Lock SUPERVISOR_LOCK = new ReentrantLock();
 
-    private static int lruCacheSize = Integer.getInteger(JenkinsScheduler.class.getName()+".lruCacheSize", 10);
+    private static int lruCacheSize = Integer.getInteger(JenkinsScheduler.class.getName() + ".lruCacheSize", 10);
 
     private static LRUMap<String, Object> recentlyAcceptedOffers = new LRUMap<String, Object>(lruCacheSize);
 
@@ -161,7 +161,7 @@ public class JenkinsScheduler implements Scheduler {
                     } else {
                         LOGGER.info("The Mesos driver was stopped.");
                     }
-                } catch(RuntimeException e) {
+                } catch (RuntimeException e) {
                     LOGGER.log(Level.SEVERE, "Caught a RuntimeException", e);
                 } finally {
                     SUPERVISOR_LOCK.lock();
@@ -230,14 +230,14 @@ public class JenkinsScheduler implements Scheduler {
      */
     private String getJnlpSecret(String slaveName) {
         String jnlpSecret = "";
-        if(getJenkins().isUseSecurity()) {
+        if (getJenkins().isUseSecurity()) {
             jnlpSecret = String.format(JNLP_SECRET_FORMAT, jenkins.slaves.JnlpSlaveAgentProtocol.SLAVE_SECRET.mac(slaveName));
         }
         return jnlpSecret;
     }
 
     private static String joinPaths(String prefix, String suffix) {
-        if (prefix.endsWith("/"))   prefix = prefix.substring(0, prefix.length()-1);
+        if (prefix.endsWith("/")) prefix = prefix.substring(0, prefix.length() - 1);
         if (suffix.startsWith("/")) suffix = suffix.substring(1, suffix.length());
 
         return prefix + '/' + suffix;
@@ -260,8 +260,8 @@ public class JenkinsScheduler implements Scheduler {
             // resulting in scheduling the slave and resulting in orphaned task/slave not monitored
             // by Jenkins.
 
-            for(Request request : requests) {
-                if(request.request.slave.name.equals(name)) {
+            for (Request request : requests) {
+                if (request.request.slave.name.equals(name)) {
                     LOGGER.info("Removing enqueued mesos task " + name);
                     requests.remove(request);
                     // Also signal the Thread of the MesosComputerLauncher.launch() to exit from latch.await()
@@ -303,7 +303,7 @@ public class JenkinsScheduler implements Scheduler {
         Metrics.metricRegistry().meter("mesos.scheduler.decline.short").mark();
 
         if (offer.hasSlaveId()) {
-            Metrics.metricRegistry().meter("mesos.scheduler.decline.short."+offer.getSlaveId().getValue()).mark();
+            Metrics.metricRegistry().meter("mesos.scheduler.decline.short." + offer.getSlaveId().getValue()).mark();
         }
 
         declineOffer(offer, MesosCloud.SHORT_DECLINE_OFFER_DURATION_SEC);
@@ -341,7 +341,7 @@ public class JenkinsScheduler implements Scheduler {
         for (Offer offer : offers) {
             Metrics.metricRegistry().meter("mesos.scheduler.offer.processed").mark();
             if (offer.hasSlaveId()) {
-                Metrics.metricRegistry().meter("mesos.scheduler.offers.processed."+offer.getSlaveId().getValue()).mark();
+                Metrics.metricRegistry().meter("mesos.scheduler.offers.processed." + offer.getSlaveId().getValue()).mark();
             }
 
             final Timer.Context offerContext = Metrics.metricRegistry().timer("mesos.scheduler.offer.processing.time").time();
@@ -353,7 +353,7 @@ public class JenkinsScheduler implements Scheduler {
                     Metrics.metricRegistry().meter("mesos.scheduler.decline.long").mark();
 
                     if (offer.hasSlaveId()) {
-                        Metrics.metricRegistry().meter("mesos.scheduler.decline.long."+offer.getSlaveId().getValue()).mark();
+                        Metrics.metricRegistry().meter("mesos.scheduler.decline.long." + offer.getSlaveId().getValue()).mark();
                     }
                     declineOffer(offer, mesosCloud.getDeclineOfferDurationDouble());
                     continue;
@@ -405,12 +405,12 @@ public class JenkinsScheduler implements Scheduler {
                 LOGGER.info("Did not match any of the " + offers.size() + " offers (" + requests.size() + " pending requests)");
             }
         }
-        for (Request request: requests) {
+        for (Request request : requests) {
             unmatchedLabels.add(request.request.slaveInfo.getLabelString());
         }
 
         // Note that even if the suppress call is dropped on the way to the master it is ok
-	// because we will do this check again when processing a subsequent offer.
+        // because we will do this check again when processing a subsequent offer.
         if (offers.size() > 0 && requests.isEmpty()) {
             unmatchedLabels.clear();
             suppressOffers();
@@ -441,7 +441,7 @@ public class JenkinsScheduler implements Scheduler {
 
             // Track offers received per agent
             if (offer.hasSlaveId()) {
-                Metrics.metricRegistry().meter("mesos.scheduler.offers.received."+offer.getSlaveId().getValue()).mark();
+                Metrics.metricRegistry().meter("mesos.scheduler.offers.received." + offer.getSlaveId().getValue()).mark();
             }
 
             if (!queued) {
@@ -522,7 +522,7 @@ public class JenkinsScheduler implements Scheduler {
      * @return whether or not the offer is currently available
      */
     private boolean isOfferAvailable(Offer offer) {
-        if(offer.hasUnavailability()) {
+        if (offer.hasUnavailability()) {
             Protos.Unavailability unavailability = offer.getUnavailability();
 
             Date startTime = new Date(TimeUnit.NANOSECONDS.toMillis(unavailability.getStart().getNanoseconds()));
@@ -548,10 +548,11 @@ public class JenkinsScheduler implements Scheduler {
      * (LRU algorithm) if its present in offers list.
      * This will help in reducing build time since all the required
      * artifacts will be present already.
+     *
      * @param offers
      */
     private void reArrangeOffersBasedOnAffinity(List<Offer> offers) {
-        if(recentlyAcceptedOffers.size() > 0) {
+        if (recentlyAcceptedOffers.size() > 0) {
             //Iterates from least to most recently used.
             OrderedMapIterator<String, Object> mapIterator = recentlyAcceptedOffers.mapIterator();
             while (mapIterator.hasNext()) {
@@ -563,7 +564,7 @@ public class JenkinsScheduler implements Scheduler {
 
     private void reArrangeOffersBasedOnAffinity(List<Offer> offers, String recentSlaveId) {
         int offerIndex = getOfferIndex(offers, recentSlaveId);
-        if(offerIndex > 0) {
+        if (offerIndex > 0) {
             LOGGER.fine("Rearranging offers based on affinity");
             Offer recentOffer = offers.remove(offerIndex);
             offers.add(0, recentOffer);
@@ -573,7 +574,7 @@ public class JenkinsScheduler implements Scheduler {
     private int getOfferIndex(List<Offer> offers, String recentSlaveId) {
         int offerIndex = -1;
         for (Offer offer : offers) {
-            if(offer.getSlaveId().getValue().equals(recentSlaveId)) {
+            if (offer.getSlaveId().getValue().equals(recentSlaveId)) {
                 offerIndex = offers.indexOf(offer);
                 return offerIndex;
             }
@@ -589,7 +590,7 @@ public class JenkinsScheduler implements Scheduler {
         for (Resource resource : offer.getResourcesList()) {
             String resourceRole = resource.getRole();
             String expectedRole = mesosCloud.getRole();
-            if (! (resourceRole.equals(expectedRole) || resourceRole.equals("*"))) {
+            if (!(resourceRole.equals(expectedRole) || resourceRole.equals("*"))) {
                 LOGGER.warning("Resource role " + resourceRole +
                         " doesn't match expected role " + expectedRole);
                 continue;
@@ -632,7 +633,7 @@ public class JenkinsScheduler implements Scheduler {
         }
 
         if (cpus < 0) LOGGER.fine("No cpus resource present");
-        if (mem < 0)  LOGGER.fine("No mem resource present");
+        if (mem < 0) LOGGER.fine("No mem resource present");
 
         MesosSlaveInfo.ContainerInfo containerInfo = request.request.slaveInfo.getContainerInfo();
 
@@ -668,7 +669,7 @@ public class JenkinsScheduler implements Scheduler {
                             "  cpus:  " + requestedCpus + "\n" +
                             "  mem:   " + requestedMem + "\n" +
                             "  ports: " + requestedPorts + "\n" +
-                            "  attributes:  " + (slaveAttributes == null ? ""  : slaveAttributes.toString()));
+                            "  attributes:  " + (slaveAttributes == null ? "" : slaveAttributes.toString()));
             return false;
         }
     }
@@ -866,7 +867,7 @@ public class JenkinsScheduler implements Scheduler {
                                 Value.Scalar.newBuilder()
                                         .setValue(cpus).build());
                 // add by renfh8, 设置Reservation
-                if (r.getReservation() != null) {
+                if (r.getReservation() != null && r.getReservation().getPrincipal() != null && r.getReservation().hasPrincipal()) {
                     cpusBuilder.setReservation(r.getReservation()).build();
                 }
                 builder.addResources(cpusBuilder);
@@ -883,7 +884,7 @@ public class JenkinsScheduler implements Scheduler {
                                 Value.Scalar.newBuilder()
                                         .setValue(mem).build());
                 // add by renfh8, 设置Reservation
-                if (r.getReservation() != null) {
+                if (r.getReservation() != null && r.getReservation().getPrincipal() != null && r.getReservation().hasPrincipal()) {
                     memBuilder.setReservation(r.getReservation()).build();
                 }
                 builder.addResources(memBuilder);
@@ -899,7 +900,7 @@ public class JenkinsScheduler implements Scheduler {
                                 Value.Scalar.newBuilder()
                                         .setValue(disk).build());
                 // add by renfh8, 设置Reservation
-                if (r.getReservation() != null) {
+                if (r.getReservation() != null && r.getReservation().getPrincipal() != null && r.getReservation().hasPrincipal()) {
                     diskBuilder.setReservation(r.getReservation()).build();
                 }
                 builder.addResources(diskBuilder);
@@ -917,7 +918,7 @@ public class JenkinsScheduler implements Scheduler {
 
         ContainerInfo.Builder containerInfoBuilder = ContainerInfo.newBuilder().setType(containerType);
 
-        switch(containerType) {
+        switch (containerType) {
             case DOCKER:
                 LOGGER.info("Launching in Docker Mode:" + containerInfo.getDockerImage());
                 DockerInfo.Builder dockerInfoBuilder = DockerInfo.newBuilder() //
@@ -985,10 +986,10 @@ public class JenkinsScheduler implements Scheduler {
                 LOGGER.info("Launching in UCR Mode:" + containerInfo.getDockerImage());
 
                 Image dockerImage = Image
-                                    .newBuilder()
-                                    .setType(DOCKER)
-                                    .setDocker(Image.Docker.newBuilder().setName(containerInfo.getDockerImage()).build())
-                                    .build();
+                        .newBuilder()
+                        .setType(DOCKER)
+                        .setDocker(Image.Docker.newBuilder().setName(containerInfo.getDockerImage()).build())
+                        .build();
 
 
                 containerInfoBuilder
@@ -1028,7 +1029,7 @@ public class JenkinsScheduler implements Scheduler {
                 if (networkInfo.hasNetworkName()) {
                     //Add the virtual network specified, trimming edges for whitespace
                     networkInfoBuilder.setName(networkInfo.getNetworkName().trim());
-                    LOGGER.info("Launching container on network " + networkInfo.getNetworkName() );
+                    LOGGER.info("Launching container on network " + networkInfo.getNetworkName());
                 }
 
                 containerInfoBuilder.addNetworkInfos(networkInfoBuilder.build());
@@ -1045,7 +1046,7 @@ public class JenkinsScheduler implements Scheduler {
         return commandBuilder;
     }
 
-    String generateJenkinsCommand2Run(int jvmMem,String jvmArgString,String jnlpArgString,String slaveName) {
+    String generateJenkinsCommand2Run(int jvmMem, String jvmArgString, String jnlpArgString, String slaveName) {
 
         return String.format(SLAVE_COMMAND_FORMAT,
                 jvmMem,
@@ -1070,11 +1071,11 @@ public class JenkinsScheduler implements Scheduler {
             // regarding setting the shell value, and the impact on the command to be
             // launched
             String customShell = request.request.slaveInfo.getContainerInfo().getCustomDockerCommandShell();
-            if (StringUtils.stripToNull(customShell)==null) {
+            if (StringUtils.stripToNull(customShell) == null) {
                 throw new IllegalArgumentException("Invalid custom shell argument supplied  ");
             }
 
-            LOGGER.fine( String.format( "About to use custom shell: %s " , customShell));
+            LOGGER.fine(String.format("About to use custom shell: %s ", customShell));
             if (request.request.slaveInfo.getContainerInfo().getIsDind()) {
                 List args = new ArrayList();
                 args.add(customShell);
@@ -1086,7 +1087,7 @@ public class JenkinsScheduler implements Scheduler {
                 commandBuilder.setValue(customShell);
                 List args = new ArrayList();
                 args.add(jenkinsCommand2Run);
-                commandBuilder.addAllArguments( args );
+                commandBuilder.addAllArguments(args);
             }
         } else {
             LOGGER.fine("About to use default shell ....");
@@ -1101,6 +1102,7 @@ public class JenkinsScheduler implements Scheduler {
 
     /**
      * Checks if the given taskId already exists or just finished running. If it has, then refuse the offer.
+     *
      * @param taskId The task id
      * @return True if the task already exists, false otherwise
      */
